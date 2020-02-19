@@ -19,55 +19,55 @@ def R2B(CB1, CB2, CA2):
     return y
 
 
-def Euler(concA, concB, step):
+def Euler(concA1, concB1, concA2, concB2, step):
     t = 0.0
     tol = 1e-4
     time_list = [t]
-    concA_list = [concA]
-    concB_list = [concB]
+    concA1_list = [concA1]
+    concB1_list = [concB1]
+    concA2_list = [concA2]
+    concB2_list = [concB2]
     error = 1
 
-    while t <= 5.0:
-        concA_new = concA + R1A(concA) * step
-        concB_new = concB + R1B(concA, concB) * step
-        concA = concA_new
-        concB = concB_new
-        concA_list.append(concA)
-        concB_list.append(concB)
-        t = t + step
-        time_list.append(t)
-    concA1 = concA
-    concB1 = concB
-
     while error >= abs(tol):
-        concA_new = concA + R2A(concA1, concA) * step
-        concB_new = concB + R2B(concB1, concB, concA) * step
-        errorA = abs(concA_new - concA) / concA_new
-        errorB = abs(concB_new - concB) / concB_new
-        error = (errorA + errorB) / 2
-        concA = concA_new
-        concB = concB_new
-        concA_list.append(concA)
-        concB_list.append(concB)
+        concA1_new = concA1 + R1A(concA1) * step
+        concB1_new = concB1 + R1B(concA1, concB1) * step
+        concA2_new = concA2 + R2A(concA1, concA2) * step
+        concB2_new = concB2 + R2B(concB1, concB2, concA2) * step
+        errA1 = abs(concA1_new - concA1) / concA1_new
+        errB1 = abs(concB1_new - concB1) / concB1_new
+        errA2 = abs(concA2_new - concA2) / concA2_new
+        errB2 = abs(concB2_new - concB2) / concB2_new
+        error = (errA1 + errA2 + errB1 + errB2) / 4
+        concA1 = concA1_new
+        concB1 = concB1_new
+        concA2 = concA2_new
+        concB2 = concB2_new
+        concA1_list.append(concA1)
+        concB1_list.append(concB1)
+        concA2_list.append(concA2)
+        concB2_list.append(concB2)
         t = t + step
         time_list.append(t)
     print("Time to reach steady state:", t, "minutes")
-    return [time_list, concA_list, concB_list]
+    return [time_list, concA1_list, concB1_list, concA2_list, concB2_list]
 
 
-steadystate = Euler(20, 0, 0.5)
+steadystate = Euler(20, 0.0, 0.0, 1e-10, 0.5)
 
 with open('Q2ans.csv', 'w', newline='') as ans:
     wr = csv.writer(ans)
-    wr.writerow(["Time (minutes)", "Conc A (mol / L)", "Conc B (mol / L)"])
+    wr.writerow(["Time (minutes)", "Conc A1 (mol / L)", "Conc B1 (mol / L)", "Conc A2 (mol / L)", "Conc B2 (mol / L)"])
     for i in range(len(steadystate[0])):
-        wr.writerow([steadystate[0][i], steadystate[1][i], steadystate[2][i]])
+        wr.writerow([steadystate[0][i], steadystate[1][i], steadystate[2][i], steadystate[3][i], steadystate[4][i]])
 
-plt.plot(steadystate[0], steadystate[1], label="A")
-plt.plot(steadystate[0], steadystate[2], label="B")
+plt.plot(steadystate[0], steadystate[1], label="C_A1", color="b")
+plt.plot(steadystate[0], steadystate[2], label="C_B1", color="g")
+plt.plot(steadystate[0], steadystate[3], label="C_A2", color="c")
+plt.plot(steadystate[0], steadystate[4], label="C_B2", color="k")
 
 plt.xlabel("Time (min)")
 plt.ylabel("Molarity (mol / L)")
 plt.title("Molarity of System Start-up Reaching Steady State \n Modelling A ----> B")
-plt.legend(title="Reactants:")
+plt.legend(title="Reactant concentrations:")
 plt.show()
