@@ -68,6 +68,6 @@ plt.plot(steadystate[0], steadystate[4], label="C_B2", color="k")
 
 plt.xlabel("Time (min)")
 plt.ylabel("Molarity (mol / L)")
-plt.title("Molarity of System Start-up Reaching Steady State \n Modelling A ----> B")
+plt.title("Molarity of System Start-up Reaching Steady State \n Modelling A ----> B with 2 Reactors in Series")
 plt.legend(title="Reactant concentrations:")
 plt.show()
