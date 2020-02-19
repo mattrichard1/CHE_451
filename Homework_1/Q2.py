@@ -53,13 +53,15 @@ def Euler(concA1, concB1, concA2, concB2, step):
     return [time_list, concA1_list, concB1_list, concA2_list, concB2_list]
 
 
-steadystate = Euler(20, 0.0, 0.0, 1e-10, 0.5)
+steadystate = Euler(CA0, 0.0, 0.0, 1e-10, 0.5)
+
 
 with open('Q2ans.csv', 'w', newline='') as ans:
     wr = csv.writer(ans)
     wr.writerow(["Time (minutes)", "Conc A1 (mol / L)", "Conc B1 (mol / L)", "Conc A2 (mol / L)", "Conc B2 (mol / L)"])
     for i in range(len(steadystate[0])):
         wr.writerow([steadystate[0][i], steadystate[1][i], steadystate[2][i], steadystate[3][i], steadystate[4][i]])
+
 
 plt.plot(steadystate[0], steadystate[1], label="C_A1", color="b")
 plt.plot(steadystate[0], steadystate[2], label="C_B1", color="g")
