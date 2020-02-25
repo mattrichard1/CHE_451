@@ -6,11 +6,11 @@ F = 0.085   # m^3 / min
 V = 2.1     # m^3
 k = 0.5     # m^3 / (mol * min)
 
-Cao_init = 0.925    # mol / m^3         (assumed value)
+Cao_init = 0.925        # mol / m^3         (assumed value)
 Cao_prime = 1       # mol / m^3
 Cao = Cao_init + Cao_prime  # mol / m^3
 
-Ca_init = 0.236     # mol / m^3         (assumed value)
+Ca_init = 0.236         # mol / m^3         (assumed value)
 
 
 #Part A; Analytical Solution:
@@ -24,7 +24,7 @@ def Ca_dev_analyt(t):
 
 #Part B; Numerical Solution & Graphical Comparison:
 def dCa_dt(Ca):
-    y = F / V * (Cao - Ca) - k * Ca**2
+    y = F / V * (Cao_prime - (Ca - Ca_init)) - k * (Ca**2 + Ca_init**2)
     return y
 
 def Euler(step):
@@ -39,6 +39,7 @@ def Euler(step):
     analyt_list = [Ca_prime_a]
     numerical_list = [Ca_prime_n]
 
+    #Analytical loop:
     while error_a >= abs(tol):
         analyt_new = Ca_dev_analyt(t)
         error_a = abs(analyt_new - Ca_prime_a) / analyt_new
@@ -46,8 +47,9 @@ def Euler(step):
         t = t + step
         time_list_a.append(t)
         analyt_list.append(Ca_prime_a)
-    print("Time to reach steady state for analytical:", t, "minutes")
+    print("Steady state for analytical method:", t, "minutes", ",", Ca_prime_a, "mol / m^3")
 
+    #Numerical loop:
     t = 1.0
     while error_n >= abs(tol):
         num_new = Ca_prime_n + dCa_dt(Ca_prime_n) * step
@@ -56,7 +58,7 @@ def Euler(step):
         t = t + step
         time_list_n.append(t)
         numerical_list.append(Ca_prime_n)
-    print("Time to reach steady state for numerical:", t, "minutes")
+    print("Steady state for numerical method:", t, "minutes", ",", Ca_prime_n, "mol / m^3")
 
     return [time_list_a, time_list_n, analyt_list, numerical_list]
 
@@ -67,3 +69,8 @@ with open('Q1ans.csv', 'w', newline='') as ans:
     wr.writerow(["Time (minutes)", "Ca_analytical approx (mol / m^3)", "Ca_numerical approx (mol / m^3)"])
     for i in range(len(steadystate[0])):
         wr.writerow([steadystate[0][i], steadystate[2][i], steadystate[3][i]])
+
+plt.plot(steadystate[0], steadystate[2], label="Analytical model")
+plt.plot(steadystate[1], steadystate[3], label="Numerical model")
+plt.legend(title="Modeling Method")
+plt.show()
