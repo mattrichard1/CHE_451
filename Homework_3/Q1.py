@@ -28,39 +28,39 @@ def dCa_dt(Ca):
     return y
 
 def Euler(step):
-    t = 1.0
+    t = 0.01
     Ca_prime_a = 0  # Ca_prime_a is a deviation variable of Ca for analyt soln
     Ca_prime_n = 0  # Ca_prime_n is a deviation variable of Ca for num soln
-    tol = 1e-4
-    error_a = 1
-    error_n = 1
-    time_list_a = [t]
-    time_list_n = [t]
+    tol = 1e-5
+    error = 1
+    time_list = [t]
     analyt_list = [Ca_prime_a]
     numerical_list = [Ca_prime_n]
+    Cao_prime_list = [0]
 
-    #Analytical loop:
-    while error_a >= abs(tol):
+    while error >= abs(tol):
+        # Feed data:
+        Cao_prime_list.append(Cao_prime)
+
+        # Analytical loop:
         analyt_new = Ca_dev_analyt(t)
         error_a = abs(analyt_new - Ca_prime_a) / analyt_new
         Ca_prime_a = analyt_new
-        t = t + step
-        time_list_a.append(t)
         analyt_list.append(Ca_prime_a)
-    print("Steady state for analytical method:", t, "minutes", ",", Ca_prime_a, "mol / m^3")
 
-    #Numerical loop:
-    t = 1.0
-    while error_n >= abs(tol):
+        #Numerical loop:
         num_new = Ca_prime_n + dCa_dt(Ca_prime_n) * step
         error_n = abs(num_new - Ca_prime_n) / num_new
         Ca_prime_n = num_new
-        t = t + step
-        time_list_n.append(t)
         numerical_list.append(Ca_prime_n)
-    print("Steady state for numerical method:", t, "minutes", ",", Ca_prime_n, "mol / m^3")
+        error = (error_a + error_n) / 2
 
-    return [time_list_a, time_list_n, analyt_list, numerical_list]
+        time_list.append(t)
+        t = t + step
+    print("Steady state for analytical method:", t, "minutes", ",", Ca_prime_a, "mol / m^3")
+    print("Steady state for numerical method:", t, "minutes", ",", Ca_prime_n, "mol / m^3")
+    return [time_list, analyt_list, numerical_list, Cao_prime_list]
+
 
 steadystate = Euler(0.1)
 
@@ -68,9 +68,14 @@ with open('Q1ans.csv', 'w', newline='') as ans:
     wr = csv.writer(ans)
     wr.writerow(["Time (minutes)", "Ca_analytical approx (mol / m^3)", "Ca_numerical approx (mol / m^3)"])
     for i in range(len(steadystate[0])):
-        wr.writerow([steadystate[0][i], steadystate[2][i], steadystate[3][i]])
+        wr.writerow([steadystate[0][i], steadystate[1][i], steadystate[2][i]])
 
-plt.plot(steadystate[0], steadystate[2], label="Analytical model")
-plt.plot(steadystate[1], steadystate[3], label="Numerical model")
+
+
+plt.plot(steadystate[0], steadystate[1], label="Analytical model", color="k")
+plt.plot(steadystate[0], steadystate[2], label="Numerical model", color="g")
+plt.plot(steadystate[0], steadystate[3], label="Feed Stream", color="b")
 plt.legend(title="Modeling Method")
+plt.xlabel("Time (min)")
+plt.ylabel("Deviation Concentration of A (mol / m^3)")
 plt.show()
