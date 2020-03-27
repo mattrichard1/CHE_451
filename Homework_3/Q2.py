@@ -2,109 +2,99 @@ import matplotlib.pyplot as plt
 import csv
 import numpy as np
 
-F = 0.085   # m^3 / min
-V = 2.1     # m^3
-k = 0.5     # m^3 / (mol * min)
+F = 0.085           # m^3 / min
+V = 2.1             # m^3
+rho = 1e3           # kg / m^3
+T_s = 303           # K
+Tc = T_s            # K
+Cp = 1              # kcal / (kg * K)
+Cao = 1             # mol / m^3
+Ca_s = 0.075        # mol / m^3
+UA = 65             # kcal / (min * K)
+dH_rxn = -1300      # kcal / mol
 
-Cao_s = 1       # mol / m^3
-Cao_prime = 1   # mol / m^3
-Ca_s = 1        # mol / m^3
-
-
-#Part A; Analytical Solution:
-def tau(F):
-    y = V / (F + (V*k / 2 * Ca_s**0.5))
-    return y
-def kp(F):
-    y = F / (F + (V*k / 2 * Ca_s**0.5))
-    return y
-
-def Ca_prime_analyt(t, F):
-    y = Cao_prime * kp(F) * (1 - np.exp(-t / tau(F)))
+A = 1e10        # min^-1
+Ea = 59750      # J / mol
+R = 8.314       # J / (mol * K)
+def k(T):
+    y = A * np.exp( -Ea / (R * T))
     return y
 
 
-#Part B; Numerical Solution & Graphical Comparison:
-def dCa_prime_dt(Ca, F):
-    y = F / V * (Cao_prime - (Ca - Ca_s)) - k * (Ca**0.5 - Ca_s**0.5)
+def dT_dt(T, Ca, To):
+    y = F / V * (To - T) + ( (-dH_rxn*k(T)*V*Ca - UA*(T - Tc)) / (rho * V * Cp))
     return y
 
-def steady_state(step, F):
-    tol = 1e-4
-    error = 1
+def dCa_dt(Ca, T):
+    y = F / V * (Cao - Ca) - k(T) * Ca
+    return y
 
-    t = 0
-    tau_counter = t / tau(F)
-    Ca_prime_a = 0
-    Ca_prime_e = 0
 
-    tau_list = [tau_counter]
+def steady_state(step, To_prime):
+    tol = 1e-7
+    error = 1.0
+
+    t = 0.0
+    T = T_s
+    Ca = Ca_s
+    To = T_s + To_prime
+
     time_list = [t]
-    Ca_prime_a_list = [Ca_prime_a]
-    Ca_prime_e_list = [Ca_prime_e]
-    Cao_prime_list = [0]
-    diff_list = [0]
+    T_list = [T_s]
+    To_list = [T_s]
+    Ca_list = [Ca_s]
 
     while error >= abs(tol):
-        # Analytical Method:
-        Ca_prime_a_new = Ca_prime_analyt(t, F)
-        error_a = abs(Ca_prime_a_new - Ca_prime_a) / Ca_prime_a_new
-        if t == 0:
-            error_a = 1
-        Ca_prime_a = Ca_prime_a_new
-        Ca_prime_a_list.append(Ca_prime_a)
-
         # Euler's Method:
-        Ca_prime_e_new = Ca_prime_e + dCa_prime_dt(Ca_prime_e, F) * step
-        error_e = abs(Ca_prime_e_new - Ca_prime_e) / Ca_prime_e_new
+        Ca_new = Ca + dCa_dt(Ca, T) * step
+        error_c = abs(Ca_new - Ca) / Ca_new
         if t == 0:
-            error_e = 1
-        Ca_prime_e = Ca_prime_e_new
-        Ca_prime_e_list.append(Ca_prime_e)
+            error_c = 1
+        Ca = Ca_new
 
-        # Time Iterations
+        T_new = T + dT_dt(T, Ca, To) * step
+        error_t = abs(T_new - T) / T_new
+        if t == 0:
+            error_t = 1.0
+        T = T_new
+
+        # Data Storage:
         t = t + step
         time_list.append(t)
-        tau_counter = t / tau(F)
-        tau_list.append(tau_counter)
+        Ca_list.append(Ca)
+        T_list.append(T)
+        To_list.append(To)
 
-        # Other:
-        Cao_prime_list.append(Cao_prime)
-        difference = abs(Ca_prime_e - Ca_prime_a)
-        diff_list.append(difference)
-        error = (error_a + error_e) / 2
-    return(tau_list, time_list, Ca_prime_a_list, Ca_prime_e_list, Cao_prime_list, diff_list,
-           tau_counter, t, Ca_prime_a, Ca_prime_e, difference)
+        error = (error_t + error_c) / 2
 
-# with open('Q2ans.csv', 'w', newline='') as ans:
-#     wr = csv.writer(ans)
-#     wr.writerow(["Flow Rate (m^3 / min)", "Tau's", "Time (min)", "Ca'_analyt", "Ca'_euler", "difference in Ca'from models"])
-#
-# test_range = [0.085, 1e-5, 0.01, 0.1, 0.25, 0.5, 1, 2, 5, 10]
-# for Flow in (test_range):
-#     compare = steady_state(0.1, Flow)
-#
-#     with open('Q2ans.csv', 'a', newline='') as ans:
-#         wr = csv.writer(ans)
-#         wr.writerow([Flow, compare[6], compare[7], compare[8], compare[9], compare[10]])
-#     print("With a Flow Rate of:", Flow, "m^3 / min:")
-#     print("Analytical method concentration:", compare[8], "mol / m^3")
-#     print("Numerical method concentraction:", compare[9], "mol / m^3")
-#     print("Difference in methods:", compare[10], "mol / m^3")
-#     plt.plot(compare[0], compare[5], label=Flow)
-# plt.xlabel("Tau (min)")
-# plt.ylabel("Difference between modelling methods")
-# plt.legend(title="Flow Rates (m^3 / min):")
-# plt.show()
+    return(time_list, Ca_list, T_list, To_list)
 
+ans_B = steady_state(0.01, 20.0)
 
-ans = steady_state(0.1, F)
-print(ans[7])
+ans_C = steady_state(0.01, -20.0)
 
-plt.plot(ans[1], ans[2], label="Analytical model", color="k")
-plt.plot(ans[1], ans[3], label="Numerical model", color="g")
-plt.plot(ans[1], ans[4], label="Feed Stream", color="b")
-plt.legend(title="Modeling Method")
+plt.plot(ans_B[0], ans_B[2], label='Tank Temp', color="k")
+plt.plot(ans_B[0], ans_B[3], label='Feed Temp', color="g")
+plt.legend(title="Stream Type:")
 plt.xlabel("Time (min)")
-plt.ylabel("Deviation Concentration of A (mol / m^3)")
+plt.ylabel("Temp (K)")
+plt.show()
+
+plt.plot(ans_B[0], ans_B[1], label='Ca in outlet', color="k")
+plt.legend(title="Concentration:")
+plt.xlabel("Time (min)")
+plt.ylabel("Concentration of A (mol / m^3)")
+plt.show()
+
+plt.plot(ans_C[0], ans_C[2], label='Tank Temp', color="k")
+plt.plot(ans_C[0], ans_C[3], label='Feed Temp', color="g")
+plt.legend(title="Stream Type:")
+plt.xlabel("Time (min)")
+plt.ylabel("Temp (K)")
+plt.show()
+
+plt.plot(ans_C[0], ans_C[1], label='Ca in outlet', color="k")
+plt.legend(title="Concentration:")
+plt.xlabel("Time (min)")
+plt.ylabel("Concentration of A (mol / m^3)")
 plt.show()
